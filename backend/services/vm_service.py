@@ -1,24 +1,31 @@
-# services/vm_service.py
+"""Service layer for VM operations."""
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from ..models import VM, VMStatus
-from ..schemas import VMCreate
+from sqlalchemy import select, insert
+from ..models import VMCreate, VM
+from ..database import VM as VMModel
 
 class VMService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
     async def create_vm(self, vm_in: VMCreate) -> VM:
-        vm = VM(**vm_in.dict(), status=VMStatus.PENDING)
-        self.db.add(vm)
+        # Insert into DB
+        stmt = insert(VMModel).values(
+            name=vm_in.name,
+            cpu=vm_in.cpu,
+            memory_gb=vm_in.memory_gb,
+            storage_gb=vm_in.storage_gb,
+            host_id=vm_in.host_id,
+            status="running"
+        ).returning(VMModel)
+        result = await self.db.execute(stmt)
         await self.db.commit()
-        await self.db.refresh(vm)
-        return vm
+        vm_row = result.fetchone()
+        return VM.from_orm(vm_row)
 
-    async def get_vm(self, vm_id: int) -> VM | None:
-        result = await self.db.execute(select(VM).where(VM.id == vm_id))
-        return result.scalar_one_or_none()
-
-    async def list_vms(self):
-        result = await self.db.execute(select(VM))
-        return result.scalars().all()
+    async def list_vms(self) -> list[VM]:
+        stmt = select(VMModel)
+        result = await self.db.execute(stmt)
+        rows = result.scalars().all()
+        return [VM.from_orm(row) for row in rows]

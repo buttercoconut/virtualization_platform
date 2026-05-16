@@ -1,31 +1,21 @@
-# models.py
-from sqlalchemy import Column, Integer, String, Enum
-from sqlalchemy.orm import relationship
-from .database import Base
+"""Pydantic models for VM and related entities."""
 
-class VMStatus(str, Enum):
-    PENDING = "pending"
-    RUNNING = "running"
-    STOPPED = "stopped"
-    ERROR = "error"
+from pydantic import BaseModel, Field
+from typing import Optional
 
-class VM(Base):
-    __tablename__ = "vms"
+class VMBase(BaseModel):
+    name: str = Field(..., example="web-server-01")
+    cpu: int = Field(..., ge=1, example=2)
+    memory_gb: int = Field(..., ge=1, example=4)
+    storage_gb: int = Field(..., ge=1, example=50)
+    host_id: Optional[int] = Field(None, example=1)
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True, nullable=False)
-    cpu = Column(Integer, nullable=False)
-    memory = Column(Integer, nullable=False)  # in MB
-    status = Column(Enum(VMStatus), default=VMStatus.PENDING, nullable=False)
+class VMCreate(VMBase):
+    pass
 
-    snapshots = relationship("Snapshot", back_populates="vm")
+class VM(VMBase):
+    id: int
+    status: str = Field(..., example="running")
 
-class Snapshot(Base):
-    __tablename__ = "snapshots"
-
-    id = Column(Integer, primary_key=True, index=True)
-    vm_id = Column(Integer, nullable=False)
-    name = Column(String, nullable=False)
-    created_at = Column(String, nullable=False)
-
-    vm = relationship("VM", back_populates="snapshots")
+    class Config:
+        orm_mode = True
