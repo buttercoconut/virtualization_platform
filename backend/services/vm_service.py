@@ -1,31 +1,16 @@
-"""Service layer for VM operations."""
+from sqlalchemy.orm import Session
+from .models import VMCreateRequest, VMResponse
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert
-from ..models import VMCreate, VM
-from ..database import VM as VMModel
+# Dummy implementation
 
-class VMService:
-    def __init__(self, db: AsyncSession):
-        self.db = db
-
-    async def create_vm(self, vm_in: VMCreate) -> VM:
-        # Insert into DB
-        stmt = insert(VMModel).values(
-            name=vm_in.name,
-            cpu=vm_in.cpu,
-            memory_gb=vm_in.memory_gb,
-            storage_gb=vm_in.storage_gb,
-            host_id=vm_in.host_id,
-            status="running"
-        ).returning(VMModel)
-        result = await self.db.execute(stmt)
-        await self.db.commit()
-        vm_row = result.fetchone()
-        return VM.from_orm(vm_row)
-
-    async def list_vms(self) -> list[VM]:
-        stmt = select(VMModel)
-        result = await self.db.execute(stmt)
-        rows = result.scalars().all()
-        return [VM.from_orm(row) for row in rows]
+def create_vm(db: Session, vm_req: VMCreateRequest) -> VMResponse:
+    # In real code, insert into DB and return created VM
+    return VMResponse(
+        id=1,
+        name=vm_req.name,
+        cpu=vm_req.cpu,
+        memory_gb=vm_req.memory_gb,
+        storage_gb=vm_req.storage_gb,
+        status="running",
+        host_id=vm_req.host_id,
+    )

@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter, Depends
 from .database import SessionLocal
+from .models import VMCreateRequest
 from .services import vm_service
 
-app = FastAPI(title="Virtualization Platform API")
+app = FastAPI()
 
 # Dependency for DB session
 @app.on_event("startup")
